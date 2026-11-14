@@ -6,5 +6,9 @@
     "apps/*",
     "packages/*"
   ],
-  "scripts": {}
+  "scripts": {
+  "dev:api": "npm run dev -w apps/api",
+  "build:api": "npm run build -w apps/api",
+  "typecheck:api": "npm run typecheck -w apps/api"
+}
 }
