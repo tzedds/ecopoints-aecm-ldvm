@@ -1,0 +1,17 @@
+{
+  "name": "ecopoints",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+  "dev:api": "npm run dev -w apps/api",
+  "build:api": "npm run build -w apps/api",
+  "typecheck:api": "npm run typecheck -w apps/api",
+  "dev:web": "npm run dev -w apps/web",
+  "build:web": "npm run build -w apps/web",
+  "typecheck:web": "npm run typecheck -w apps/web"
+}
+}
