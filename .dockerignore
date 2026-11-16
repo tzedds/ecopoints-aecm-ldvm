@@ -5,5 +5,6 @@ node_modules
 **/.output
 .git
 .github
+.history
 .env
 **/.env
