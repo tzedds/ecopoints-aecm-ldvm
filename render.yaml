@@ -1,0 +1,30 @@
+databases:
+  - name: ecopoints-db
+    plan: free
+    region: oregon
+    databaseName: ecopoints
+    user: ecopoints
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: acceso externo para cargar migraciones y respaldos
+
+services:
+  - type: web
+    name: ecopoints-api
+    runtime: docker
+    plan: free
+    region: oregon
+    branch: master
+    dockerfilePath: ./docker/api.Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ecopoints-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false
