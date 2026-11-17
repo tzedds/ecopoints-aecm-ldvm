@@ -3,7 +3,7 @@
 ## URLs
 
 - API (Render): https://ecopoints-api-op38.onrender.com
-- Frontend (Netlify): pendiente
+- Frontend (Netlify): https://ecopointsaecmldvm89.netlify.app
 
 ## Importante del plan gratuito de Render
 
