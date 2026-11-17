@@ -1,0 +1,7 @@
+[build]
+  command = "npm run generate -w apps/web"
+  publish = "apps/web/.output/public"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NUXT_PUBLIC_API_BASE = "https://ecopoints-api-op38.onrender.com"
