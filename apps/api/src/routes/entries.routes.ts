@@ -1,8 +1,11 @@
 import { Router } from "express";
-import { createEntry } from "../controllers/entries.controller";
+import { createEntry, listEntries, listMyEntries } from "../controllers/entries.controller";
+import { requireAuth, requireRole} from "../middleware/auth";
 
 const router = Router();
 
-router.post("/entries", createEntry);
+router.post("/entries", requireAuth,  createEntry);
+router.get ("/entries/mine", requireAuth, listMyEntries);
+router.get ("/entries", requireAuth, requireRole("manager"), listEntries);
 
 export default router;
