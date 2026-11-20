@@ -106,3 +106,77 @@ export async function listEntries(req: Request, res: Response) {
     res.status(500).json({ error: "No se pudieron consultar las entregas" });
   }
 }
+
+// aprueba o rechaza una entrega pendiente (solo el encargado)
+async function resolveEntry(req: Request, res: Response, decision: "approved" | "rejected") {
+  const auth = res.locals.auth as AuthPayload;
+  const entryId = Number(req.params.id);
+
+  if (!Number.isInteger(entryId) || entryId <= 0) {
+    res.status(400).json({ error: "El id de la entrega debe ser un entero positivo" });
+    return;
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Bloquea la fila hasta terminar: dos encargados no pueden validar la misma entrega a la vez
+    const found = await client.query(
+      `SELECT e.id, e.user_id, e.quantity, e.status, m.points_per_unit
+         FROM recycling_entries e
+         JOIN materials m ON m.id = e.material_id
+        WHERE e.id = $1
+        FOR UPDATE OF e`,
+      [entryId]
+    );
+
+    if (found.rowCount === 0) {
+      await client.query("ROLLBACK");
+      res.status(404).json({ error: "Entrega no encontrada" });
+      return;
+    }
+
+    const entry = found.rows[0];
+    if (entry.status !== "pending") {
+      await client.query("ROLLBACK");
+      res.status(409).json({ error: `La entrega ya fue validada (${entry.status})` });
+      return;
+    }
+
+    // Los puntos se calculan aquí, nunca en el frontend
+    let points = 0;
+    if (decision === "approved") {
+      points = entry.quantity * entry.points_per_unit;
+      await client.query(
+        "INSERT INTO point_logs (user_id, entry_id, points) VALUES ($1, $2, $3)",
+        [entry.user_id, entry.id, points]
+      );
+    }
+
+    const updated = await client.query(
+      `UPDATE recycling_entries
+          SET status = $2, validated_by = $3, validated_at = NOW()
+        WHERE id = $1
+        RETURNING id, user_id, status, validated_by, validated_at`,
+      [entryId, decision, auth.id]
+    );
+
+    await client.query("COMMIT");
+    res.json({ ...updated.rows[0], points });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Error al validar la entrega:", error);
+    res.status(500).json({ error: "No se pudo validar la entrega" });
+  } finally {
+    client.release();
+  }
+}
+
+export function approveEntry(req: Request, res: Response) {
+  return resolveEntry(req, res, "approved");
+}
+
+export function rejectEntry(req: Request, res: Response) {
+  return resolveEntry(req, res, "rejected");
+}
