@@ -12,6 +12,7 @@ interface NavLink {
 const links: NavLink[] = [
   { to: "/entries/new", label: "Registrar entrega", roles: ["participant"] },
   { to: "/entries/mine", label: "Mis entregas", roles: ["participant"] },
+  { to: "/entries/pending", label: "Entregas pendientes", roles: ["manager"] },
   { to: "/", label: "Inicio" },
   { to: "/materials", label: "Materiales" },
 ];
