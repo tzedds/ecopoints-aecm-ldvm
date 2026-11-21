@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { pool } from "../db/pool";
 import { AuthPayload} from "../auth/jwt";
+import { badRequest, conflict, notFound, unauthorized } from "../errors";
 
 const VALID_STATUSES = ["pending", "approved", "rejected"];
 
@@ -14,29 +15,19 @@ export async function createEntry(req: Request, res: Response) {
     !Number.isInteger(material_id) || material_id <= 0 ||
     !Number.isInteger(quantity) || quantity <= 0
   ) {
-    res.status(400).json({
-      error: "material_id y quantity deben ser números enteros positivos",
-    });
-    return;
+    throw badRequest("material_id y quantity deben ser números enteros positivos");
   }
 
-  try {
     // 2. El material debe existir y estar activo
     const material = await pool.query(
       "SELECT id FROM materials WHERE id = $1 AND active = TRUE",
       [material_id]
     );
-    if (material.rowCount === 0) {
-      res.status(404).json({ error: "Material no encontrado" });
-      return;
-    }
+    if (material.rowCount === 0)  throw notFound ("Material no encontrado");
 
     // 3. El usuario debe existir
     const user = await pool.query("SELECT id FROM users WHERE id = $1", [auth.id]);
-    if (user.rowCount === 0) {
-      res.status(401).json({ error: "Usuario no encontrado" });
-      return;
-    }
+    if (user.rowCount === 0)  throw unauthorized ("Usuario no encontrado");
 
     // 4. Guardar. El estado queda 'pending' por defecto en la base de datos
     const result = await pool.query(
@@ -47,16 +38,11 @@ export async function createEntry(req: Request, res: Response) {
     );
 
     res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error("Error al registrar la entrega:", error);
-    res.status(500).json({ error: "No se pudo registrar la entrega" });
   }
-}
 
 // entregas del usuario autenticado
 export async function listMyEntries(_req: Request, res: Response) {
   const auth = res.locals.auth as AuthPayload;
-  try {
     const result = await pool.query(
       `SELECT e.id, m.name AS material_name, m.unit, e.quantity, e.status, e.created_at
          FROM recycling_entries e
@@ -66,18 +52,13 @@ export async function listMyEntries(_req: Request, res: Response) {
       [auth.id]
     );
     res.json(result.rows);
-  } catch (error) {
-    console.error("Error al consultar mis entregas:", error);
-    res.status(500).json({ error: "No se pudieron consultar tus entregas" });
-  }
 }
 
 // todas las entregas solo el encargado, con filtro opcional por estado
 export async function listEntries(req: Request, res: Response) {
   const raw = req.query.status;
   if (raw !== undefined && (typeof raw !== "string" || !VALID_STATUSES.includes(raw))) {
-    res.status(400).json({ error: "status debe ser pending, approved o rejected" });
-    return;
+      throw badRequest("status debe ser pending, approved o rejected");
   }
 
   const params: string[] = [];
@@ -87,7 +68,6 @@ export async function listEntries(req: Request, res: Response) {
     where = "WHERE e.status = $1";
   }
 
-  try {
     // las mas antiguas van primero para que vaya en orden
     const result = await pool.query(
       `SELECT e.id, e.user_id, u.name AS user_name,
@@ -101,10 +81,6 @@ export async function listEntries(req: Request, res: Response) {
       params
     );
     res.json(result.rows);
-  } catch (error) {
-    console.error("Error al consultar las entregas:", error);
-    res.status(500).json({ error: "No se pudieron consultar las entregas" });
-  }
 }
 
 // aprueba o rechaza una entrega pendiente (solo el encargado)
@@ -113,8 +89,7 @@ async function resolveEntry(req: Request, res: Response, decision: "approved" | 
   const entryId = Number(req.params.id);
 
   if (!Number.isInteger(entryId) || entryId <= 0) {
-    res.status(400).json({ error: "El id de la entrega debe ser un entero positivo" });
-    return;
+  throw badRequest("El id de la entrega debe ser un entero positivo");
   }
 
   const client = await pool.connect();
@@ -131,17 +106,11 @@ async function resolveEntry(req: Request, res: Response, decision: "approved" | 
       [entryId]
     );
 
-    if (found.rowCount === 0) {
-      await client.query("ROLLBACK");
-      res.status(404).json({ error: "Entrega no encontrada" });
-      return;
-    }
+    if (found.rowCount === 0) throw notFound ("Entrega no encontrada");
 
     const entry = found.rows[0];
     if (entry.status !== "pending") {
-      await client.query("ROLLBACK");
-      res.status(409).json({ error: `La entrega ya fue validada (${entry.status})` });
-      return;
+    throw conflict(`La entrega ya fue validada (${entry.status})`);
     }
 
     // Los puntos se calculan aquí, nunca en el frontend
@@ -166,8 +135,7 @@ async function resolveEntry(req: Request, res: Response, decision: "approved" | 
     res.json({ ...updated.rows[0], points });
   } catch (error) {
     await client.query("ROLLBACK");
-    console.error("Error al validar la entrega:", error);
-    res.status(500).json({ error: "No se pudo validar la entrega" });
+    throw error;
   } finally {
     client.release();
   }

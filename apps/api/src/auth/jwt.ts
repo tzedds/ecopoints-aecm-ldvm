@@ -25,7 +25,7 @@ export function verifyToken(token: string): AuthPayload {
     !payload.sub ||
     (payload.role !== "participant" && payload.role !== "manager")
   ) {
-    throw new Error("Token inválido");
+    throw new jwt.JsonWebTokenError("Token inválido");
   }
   return { id: Number(payload.sub), role: payload.role };
 }
