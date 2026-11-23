@@ -5,8 +5,6 @@ import { useEntriesStore } from "~/stores/entries";
 const materials = useMaterialsStore();
 const entries = useEntriesStore();
 
-// TODO semana 2: quitar el user_id fijo cuando exista el login (saldrá del token)
-const DEMO_USER_ID = 1;
 
 const materialId = ref<number | null>(null);
 const quantity = ref<number | "">("");
@@ -39,7 +37,6 @@ async function submit() {
   }
 
   const ok = await entries.createEntry({
-    user_id: DEMO_USER_ID,
     material_id: materialId.value,
     quantity: quantity.value,
   });
