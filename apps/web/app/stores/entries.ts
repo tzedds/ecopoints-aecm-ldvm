@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
+import { useAuthStore } from "~/stores/auth";
 
 export interface NewEntry {
-  user_id: number;
   material_id: number;
   quantity: number;
 }
@@ -21,6 +21,7 @@ export const useEntriesStore = defineStore("entries", () => {
   const lastEntry = ref<Entry | null>(null);
 
   const config = useRuntimeConfig();
+  const auth = useAuthStore();
 
   // Devuelve true si la entrega se guardó, false si hubo error
   async function createEntry(payload: NewEntry) {
@@ -30,13 +31,21 @@ export const useEntriesStore = defineStore("entries", () => {
     try {
       lastEntry.value = await $fetch<Entry>("/api/entries", {
         method: "POST",
-        baseURL: config.public.apiBase,
+        baseURL: config.public.apiBase as string,
+        headers: { Authorization: `Bearer ${auth.token}` },
         body: payload,
       });
       return true;
-    } catch (e: any) {
-      // Si la API respondió con un error, muestra su mensaje; si no, no hubo conexión
-      error.value = e?.data?.error ?? "No se pudo conectar con la API";
+    } catch (e) {
+            const err = e as { statusCode?: number; data?: { error?: string } };
+      // Sesion vencida o tokens invalidos, redirige al login
+      if (err.statusCode === 401) {
+        auth.logout();
+        await navigateTo("/login");
+        return false;
+      }
+      // si la API respondio con un error, muestra su mensaje, si no no hubo conexión
+      error.value = err.data?.error ?? "No se pudo conectar con la API";
       return false;
     } finally {
       submitting.value = false;
