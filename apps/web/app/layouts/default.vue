@@ -14,6 +14,7 @@ const links: NavLink[] = [
   { to: "/entries/mine", label: "Mis entregas", roles: ["participant"] },
   { to: "/points", label: "Mis puntos", roles: ["participant"] },
   { to: "/entries/pending", label: "Entregas pendientes", roles: ["manager"] },
+  { to: "/ranking", label: "Ranking", roles: ["participant", "manager"] },
   { to: "/", label: "Inicio" },
   { to: "/materials", label: "Materiales" },
 ];
