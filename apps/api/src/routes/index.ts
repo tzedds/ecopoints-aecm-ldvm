@@ -5,6 +5,7 @@ import entriesRoutes from "./entries.routes";
 import authRoutes from "./auth.routes";
 import pointsRoutes from "./points.routes";
 import rankingRoutes from "./ranking.routes";
+import historyRoutes from "./history.routes";
 
 const router = Router();
 
@@ -14,5 +15,6 @@ router.use(entriesRoutes);
 router.use(authRoutes);
 router.use(pointsRoutes);
 router.use(rankingRoutes);
+router.use(historyRoutes); 
 
 export default router;
