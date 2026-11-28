@@ -49,9 +49,10 @@ export const useAuthStore = defineStore("auth", () => {
         baseURL: apiBase,
         headers: { Authorization: `Bearer ${tokenCookie.value}` },
       });
-    } catch {
-      // Token vencido o inválido: se cierra la sesión
-      logout();
+    } catch (e) {
+      // Solo un 401 significa token vencido o inválido; un fallo de red no cierra la sesión
+      const err = e as { statusCode?: number };
+      if (err.statusCode === 401) logout();
     }
   }
 
