@@ -6,3 +6,7 @@
   NODE_VERSION = "22"
   NITRO_PRESET = "static"
   NUXT_PUBLIC_API_BASE = "https://ecopoints-api-op38.onrender.com"
+  [[redirects]]
+  from = "/*"
+  to = "/200.html"
+  status = 200
