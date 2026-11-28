@@ -17,6 +17,7 @@ const links: NavLink[] = [
   { to: "/ranking", label: "Ranking", roles: ["participant", "manager"] },
   { to: "/", label: "Inicio" },
   { to: "/materials", label: "Materiales" },
+  { to: "/history", label: "Historial" },
 ];
 
 const visibleLinks = computed(() =>
